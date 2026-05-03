@@ -83,11 +83,11 @@ export async function getConfirmedAccessStatus(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ConfirmedAccessStatusResult> {
-  const [profileResult, uploadCountResult] = await Promise.all([
+  const [profileResult, uploadedTermsResult] = await Promise.all([
     supabase.from("user_profiles").select("*").eq("id", userId).maybeSingle(),
     supabase
       .from("distribution_uploads")
-      .select("id", { count: "exact", head: true })
+      .select("term")
       .eq("user_id", userId)
       .eq("status", "processed"),
   ])
@@ -96,12 +96,12 @@ export async function getConfirmedAccessStatus(
     return dependencyFailure("profile lookup", profileResult.error)
   }
 
-  if (uploadCountResult.error) {
-    return dependencyFailure("upload count lookup", uploadCountResult.error)
+  if (uploadedTermsResult.error) {
+    return dependencyFailure("upload count lookup", uploadedTermsResult.error)
   }
 
   const profile = profileResult.data
-  const upload_count = uploadCountResult.count ?? 0
+  const upload_count = new Set(uploadedTermsResult.data?.map((r) => r.term) ?? []).size
   const preliminaryStatus = calculateAccessStatus({
     profile,
     uploadCount: upload_count,
