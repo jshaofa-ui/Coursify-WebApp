@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedSupabaseFromRequest } from "@/app/api/_lib/authenticated-supabase";
 import { getConfirmedAccessStatus } from "@/app/api/_lib/confirmed-access-status";
 import { checkRateLimit } from "@/app/api/_lib/rate-limit";
-import { consumeQuestion } from "@/lib/queens-answers/rate-limit";
+import { consumeQuestion, checkBurstRateLimit, formatBurstLimitMessage } from "@/lib/queens-answers/rate-limit";
+import { getCachedAnswer, setCachedAnswer, recordCacheHit, recordCacheMiss } from "@/lib/queens-answers/cache";
+import { appendConversationMessage } from "@/lib/queens-answers/conversation";
+import { incrementQuestionCount, recordResponseTime } from "@/lib/queens-answers/metrics";
 import { z } from "zod";
 
 const chatQuestionSchema = z.object({
@@ -38,16 +41,39 @@ export async function POST(request: NextRequest) {
 
   const { supabase, user } = auth;
 
-  const burstLimit = await checkRateLimit({
+  // ── Burst rate limiting (per-minute, 10 requests) ──────────────────────
+  const burstLimit = await checkBurstRateLimit(user.id);
+  if (!burstLimit.ok && burstLimit.reason === "dependency_failure") {
+    console.warn("[queens-answers/chat] burst rate-limit unavailable, failing open");
+  }
+  if (!burstLimit.ok && burstLimit.reason === "burst_rate_limit") {
+    return NextResponse.json(
+      {
+        error: formatBurstLimitMessage(burstLimit.retryAfterSeconds),
+        reason: "rate_limit",
+        retry_after: burstLimit.retryAfterSeconds,
+      },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(burstLimit.retryAfterSeconds),
+          "X-RateLimit-Limit": String(burstLimit.limit),
+        },
+      },
+    );
+  }
+
+  // ── Global burst rate limiting (existing) ──────────────────────────────
+  const globalBurst = await checkRateLimit({
     keyPrefix: "queens-answers:chat:user",
     identifier: user.id,
     limit: 20,
     windowSeconds: 60,
   });
-  if (!burstLimit.ok && burstLimit.reason === "dependency_failure") {
+  if (!globalBurst.ok && globalBurst.reason === "dependency_failure") {
     console.warn("[queens-answers/chat] burst rate-limit unavailable, failing open");
   }
-  if (!burstLimit.ok && burstLimit.reason !== "dependency_failure") {
+  if (!globalBurst.ok && globalBurst.reason !== "dependency_failure") {
     return NextResponse.json(
       {
         error: "Too many requests. Try again shortly.",
@@ -75,6 +101,42 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const { question } = parsedBody.data;
+  const startTime = Date.now();
+
+  // ── Check cache first ──────────────────────────────────────────────────
+  const cached = await getCachedAnswer(question);
+  if (cached.hit) {
+    await recordCacheHit();
+
+    // Store in conversation history
+    await Promise.all([
+      appendConversationMessage(user.id, {
+        role: "user_question",
+        content: question,
+        timestamp: new Date().toISOString(),
+      }),
+      appendConversationMessage(user.id, {
+        role: "ai_answer",
+        content: cached.answer,
+        timestamp: new Date().toISOString(),
+      }),
+      recordResponseTime(Date.now() - startTime),
+    ]);
+
+    const response = NextResponse.json({
+      answer: cached.answer,
+      remaining: null, // Not consuming quota for cached answers
+      cached: true,
+    });
+    response.headers.set("X-Cache", "HIT");
+    return response;
+  }
+
+  // Cache miss — continue with normal flow
+  await recordCacheMiss();
+
+  // ── Access check ───────────────────────────────────────────────────────
   const accessResult = await getConfirmedAccessStatus(supabase, user.id);
   if (!accessResult.ok) {
     return NextResponse.json(
@@ -97,6 +159,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── Daily quota check ──────────────────────────────────────────────────
   const consumeResult = await consumeQuestion(supabase, user.id, accessResult.semestersCompleted);
   if (!consumeResult.ok && consumeResult.reason === "dependency_failure") {
     return NextResponse.json(
@@ -119,6 +182,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // ── AI response (placeholder) ──────────────────────────────────────────
   // TODO: Replace with Gemini 2.0 Flash call.
   // If the AI API returns a rate limit error, return:
   // { answer: "API rate limit achieved for the system. It resets daily.", remaining: Math.max(0, tierLimit - newUserCount) }
@@ -127,8 +191,28 @@ export async function POST(request: NextRequest) {
   const answer =
     "Queen's Answers is still in the works — we're aiming to have it ready in time for Fall '26 course selection. In the meantime, view all our available courses and upload your grade distributions to help build the database!";
 
-  return NextResponse.json({
+  // ── Cache the response, track metrics, store conversation ──────────────
+  await Promise.all([
+    setCachedAnswer(question, answer),
+    incrementQuestionCount(user.id),
+    recordResponseTime(Date.now() - startTime),
+    appendConversationMessage(user.id, {
+      role: "user_question",
+      content: question,
+      timestamp: new Date().toISOString(),
+    }),
+    appendConversationMessage(user.id, {
+      role: "ai_answer",
+      content: answer,
+      timestamp: new Date().toISOString(),
+    }),
+  ]);
+
+  const response = NextResponse.json({
     answer,
     remaining: consumeResult.usage.remaining,
+    cached: false,
   });
+  response.headers.set("X-Cache", "MISS");
+  return response;
 }

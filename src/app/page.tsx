@@ -16,6 +16,10 @@ import { StudentCountBadge } from "@/components/landing/student-count-badge";
 import { FeatureTabs } from "@/components/landing/feature-tabs";
 import { PageFaq } from "@/components/landing/faq";
 import { CourseSearchBar } from "@/components/course-search-bar";
+import { SearchPreview } from "@/components/landing/search-preview";
+import { FeatureGrid } from "@/components/landing/feature-grid";
+import { Testimonials } from "@/components/landing/testimonials";
+import { CTASection } from "@/components/landing/cta-section";
 
 function SectionGlow({
   className,
@@ -127,6 +131,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══════════════ SEARCH PREVIEW ═══════════════ */}
+      <SearchPreview />
+
       {/* ═══════════════ HOW IT WORKS ═══════════════ */}
       <section className="section-glass py-12 sm:py-16 px-4 relative overflow-hidden">
         <SectionGlow
@@ -191,6 +198,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══════════════ FEATURE GRID ═══════════════ */}
+      <FeatureGrid />
+
       {/* ═══════════════ TABBED FEATURES ═══════════════ */}
       <section className="section-glass py-12 sm:py-16 relative overflow-hidden">
         <div className="container mx-auto px-4 relative z-10">
@@ -216,6 +226,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ═══════════════ TESTIMONIALS ═══════════════ */}
+      <Testimonials />
+
       {/* ═══════════════ FAQ ═══════════════ */}
       <section className="section-glass py-12 sm:py-16 px-4 relative overflow-hidden [overflow-anchor:none]">
         <div className="container max-w-4xl mx-auto relative z-10">
@@ -239,38 +252,7 @@ export default function Home() {
       </section>
 
       {/* ═══════════════ CTA ═══════════════ */}
-      <section className="section-glass py-14 sm:py-20 px-4 relative overflow-hidden">
-        <SectionGlow
-          className="left-[10%] top-10 h-72 w-72 blur-[145px] opacity-80"
-          gradient="radial-gradient(circle, rgba(0,48,95,0.14) 0%, rgba(0,48,95,0.05) 46%, transparent 76%)"
-        />
-        <SectionGlow
-          className="right-[10%] bottom-6 h-80 w-80 blur-[155px] opacity-75"
-          gradient="radial-gradient(circle, rgba(214,40,57,0.14) 0%, rgba(214,40,57,0.05) 44%, transparent 76%)"
-        />
-
-        <div className="container mx-auto px-4 sm:px-6 relative z-10 flex flex-col items-center">
-          <div className="text-center max-w-2xl">
-            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 leading-tight">
-              <span className="text-brand-gold">Ready to make smarter</span>
-              <br />
-              <span className="text-brand-navy dark:text-white">
-                course decisions?
-              </span>
-            </h2>
-            <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-7">
-              Join Queen&apos;s students who are using Coursify to plan their
-              academic journey.
-            </p>
-            <Link
-              href="/sign-up"
-              className="liquid-btn-gold inline-block px-8 py-3 rounded-xl font-semibold text-brand-navy text-sm sm:text-base w-full sm:w-auto text-center"
-            >
-              Sign Up — It&apos;s Free
-            </Link>
-          </div>
-        </div>
-      </section>
+      <CTASection />
 
       {/* ═══════════════ FOOTER ═══════════════ */}
       <Footer />
