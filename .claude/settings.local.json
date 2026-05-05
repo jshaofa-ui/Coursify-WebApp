@@ -24,7 +24,20 @@
       "Bash(node -e \"const v = require\\('./node_modules/@tailwindcss/postcss/package.json'\\); console.log\\(v.version\\)\")",
       "Bash(npx vitest *)",
       "mcp__plugin_supabase_supabase__list_migrations",
-      "mcp__plugin_supabase_supabase__apply_migration"
+      "mcp__plugin_supabase_supabase__apply_migration",
+      "Bash(gh api *)",
+      "Bash(npm audit *)",
+      "Bash(node -e ' *)",
+      "Bash(npm ls *)",
+      "PowerShell($pkg = Get-Content \"C:\\\\Users\\\\Amaan\\\\Projects\\\\Coursify-WebApp\\\\node_modules\\\\next\\\\package.json\" | ConvertFrom-Json; $pkg.peerDependencies; $pkg.peerDependenciesMeta)",
+      "Bash(node -e \"const l=require\\('./package-lock.json'\\); const n=l.packages['node_modules/next']; console.log\\('next deps postcss:', n && n.dependencies && n.dependencies.postcss\\);\")",
+      "Bash(node -e \"const p=require\\('./node_modules/next/package.json'\\); console.log\\('postcss dep:', p.dependencies && p.dependencies.postcss\\);\")",
+      "Bash(node -e \"const l=require\\('./package-lock.json'\\); const n=l.packages['node_modules/next/node_modules/postcss']; console.log\\('nested postcss:', n && n.version\\);\")",
+      "Bash(node -e \"console.log\\('root postcss:', require\\('./node_modules/postcss/package.json'\\).version\\); try { console.log\\('next postcss:', require\\('./node_modules/next/node_modules/postcss/package.json'\\).version\\); } catch\\(e\\) { console.log\\('no nested postcss'\\); }\")",
+      "Bash(npm --version)",
+      "Bash(Remove-Item -Recurse -Force \"C:\\\\Users\\\\Amaan\\\\Projects\\\\Coursify-WebApp\\\\node_modules\\\\next\\\\node_modules\\\\postcss\" -ErrorAction SilentlyContinue)",
+      "Bash(Write-Host \"Removed nested postcss\")",
+      "Bash(node -e \"try { console.log\\(require\\('./node_modules/next/node_modules/postcss/package.json'\\).version\\); } catch\\(e\\) { console.log\\('no nested postcss found'\\); }\")"
     ]
   }
 }
