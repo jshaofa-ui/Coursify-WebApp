@@ -123,21 +123,6 @@ export function GpaTrendChart({ course, termGpaData, isDark }: GpaTrendChartProp
         </div>
       )}
 
-      <div className="mt-4 shrink-0 flex flex-wrap justify-center gap-2">
-        {[
-          { label: 'A', range: '3.7–4.3', color: '#4CAF50' },
-          { label: 'B', range: '2.7–3.3', color: '#CDDC39' },
-          { label: 'C', range: '1.7–2.3', color: '#FF9800' },
-          { label: 'D', range: '0.7–1.3', color: '#FF5722' },
-          { label: 'F', range: '<0.7', color: '#D32F2F' },
-        ].map(({ label, range, color }) => (
-          <div key={label} className="course-detail-inset-glass inline-flex w-fit shrink-0 items-center gap-1.5 px-2.5 py-1.5 rounded-full text-xs max-w-full">
-            <span className="w-2 h-2 rounded-full flex-shrink-0 shadow-sm" style={{ backgroundColor: color }} />
-            <span className="text-brand-navy/80 dark:text-white/80 font-semibold">{label}</span>
-            <span className="text-brand-navy/45 dark:text-white/45 whitespace-nowrap">{range}</span>
-          </div>
-        ))}
-      </div>
     </div>
   );
 }
